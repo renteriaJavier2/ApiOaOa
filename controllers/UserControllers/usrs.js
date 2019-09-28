@@ -6,7 +6,7 @@ const jwtToken = require('../../middleware/Users/encode_user');
 var methodUser = require('./auxMethodUser/auxmethod');
 var mailerMethod = require('../EmailConfirm/confirm');
 const async = require('async');
-
+const value;
 async function createNewUser(req, res) {
   try {
     var params = req.body;
