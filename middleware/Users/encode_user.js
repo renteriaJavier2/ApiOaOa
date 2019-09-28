@@ -12,7 +12,9 @@ exports.auth_users = function (_objcusr) {
       user_lastname: _objcusr.user_lastname,
       user_email: _objcusr.user_email,
       user_state: _objcusr.user_state,
-      user_visible: _objcusr.user_visible
+      user_visible: _objcusr.user_visible,
+      iap:moment.unix(),
+      exp:moment.unix()
    }
    return JWT.encode(UNWRITTING_VALUE, playload_usr);
 }
