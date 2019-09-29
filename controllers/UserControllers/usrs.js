@@ -1,33 +1,31 @@
 'use strict';
 
-const models = require('../../models');
+const async = require('async');
 const bcrypt = require('bcrypt');
-const jwtToken = require('../../middleware/Users/encode_user');
+const models = require('../../models');
 var methodUser = require('./auxMethodUser/auxmethod');
 var mailerMethod = require('../EmailConfirm/confirm');
-const async = require('async');
-const value;
+const jwtToken = require('../../middleware/Users/encode_user');
+
 async function createNewUser(req, res) {
   try {
     var params = req.body;
-    var checkValue = await methodUser.checkEmptyValueUsrs(params);
-
-    if (checkValue) {
-      if (methodUser.validateEmailUsrs(params.email)) {
+    if (await methodUser.checkEmptyValueUsrs(params)) {
+      if (await methodUser.validateEmailUsrs(params.user_email)) {
         var info = await methodUser.buildUserObject(params);
         var data = await models.Users.create(info);
 
-        if (data !== null && data.length > 0) {
+        if (data === null || data.length < 0) {
           await mailerMethod.verifyRegister(data.email, data.id);
           return res.status(200).json({
-            data,
             code: 'API_U_200',
-            message: 'Registro de usuario correcto.'
+            message: 'Fallo en el registro de usuario.'
           });
         }
         return res.status(200).json({
-          code: 'API_U_403',
-          message: 'Fallo en el registro de usuario.'
+          data,
+          code: 'API_U_200',
+          message: 'Registro de usuario correcto.'
         });
       } else {
         return res.status(200).json({
@@ -43,6 +41,7 @@ async function createNewUser(req, res) {
     }
 
   } catch (error) {
+    console.log(error)
     return res.status(200).json({
       code: 'API_U_403',
       message: error.message
@@ -52,16 +51,18 @@ async function createNewUser(req, res) {
 
 async function listsUsers(req, res) {
   try {
-    var data = await models.Users.findAll({});
-    if (data !== null && data.length > 0)
+    var data = await models.Users.findAll({
+      attributes: ['id', 'user_pro_id', 'user_type_id', 'user_name', 'user_email', 'user_state', 'user_visible']
+    });
+    if (data === null || data.length < 0)
       return res.status(200).json({
-        data,
-        code: 'API_U_200',
-        message: 'Listado de usuarios correcto.'
+        code: 'API_U_403',
+        message: 'No hay datos de usuarios.'
       });
     return res.status(200).json({
-      code: 'API_U_403',
-      message: 'No hay datos de usuarios.'
+      data,
+      code: 'API_U_200',
+      message: 'Listado de usuarios correcto.'
     });
   } catch (error) {
     return res.status(200).json({
@@ -74,28 +75,28 @@ async function listsUsers(req, res) {
 async function viewDetailUser(req, res) {
   try {
     var idUrs = req.params.id;
-    var checkIdUsrs = await methodUser.checkValueIdUsr(idUrs);
-    if (!checkIdUsrs) {
+    if (!await methodUser.checkValueIdUsr(idUrs)) {
       return res.status(200).json({
         code: 'API_U_404',
         message: 'Debe proporcionar un identificador a buscar.'
       });
     } else {
-      var data = await models.Users.findOne({
+      var data = await models.Users.findAll({
+        attributes: ['id', 'user_pro_id', 'user_type_id', 'user_name', 'user_email', 'user_state', 'user_visible'],
         where: {
           id: idUrs
         }
       });
 
-      if (data !== null && data.length > 0)
+      if (data === null || data.length < 0)
         return res.status(200).json({
-          data,
-          code: 'API_U_200',
-          message: 'Detalle del usuario.'
+          code: 'API_U_403',
+          message: 'Este usuario no existe.'
         });
       return res.status(200).json({
-        code: 'API_U_403',
-        message: 'Este usuario no existe.'
+        data,
+        code: 'API_U_200',
+        message: 'Detalle del usuario.'
       });
     }
   } catch (error) {
@@ -109,29 +110,31 @@ async function viewDetailUser(req, res) {
 async function updateDataUsr(req, res) {
   try {
     var idUrs = req.params.id;
-    var checkIdUsrs = await methodUser.checkValueIdUsr(idUrs);
-    if (!checkIdUsrs) {
+    console.log(idUrs)
+    if (!await methodUser.checkValueIdUsr(idUrs)) {
       return res.status(200).json({
         code: 'API_U_404',
         message: 'Debe proporcionar un identificador a buscar.'
       });
     } else {
+      var params = req.body;
       var checkUpdateUser = await methodUser.buildUserObject(params);
-      var data = await models.Users.update({
-        checkUpdateUser
-      }, {
-        where: {
-          id: idUrs
-        }
-      });
-      if (data !== null && data.length > 0)
+
+      var data = await models.Users.update(
+        checkUpdateUser, {
+          returning: true,
+          where: {
+            id: idUrs
+          }
+        });
+      if (data === null || data.length < 0)
         return res.status(200).json({
-          data,
-          code: 'API_U_200',
+          code: 'API_U_403',
           message: 'Fallo al actualizar sus datos. Pruebe nuevamente'
         });
       return res.status(200).json({
-        code: 'API_U_403',
+        data,
+        code: 'API_U_200',
         message: 'Datos actualizados con éxito.'
       });
     }
@@ -154,8 +157,9 @@ async function deleteInfoUser(req, res) {
         }
       });
 
-      if (data >= 1)
+      if (data == 1)
         return res.status(200).json({
+          data,
           code: 'API_U_200',
           message: 'Usuario eliminado con éxito.'
         });
@@ -181,33 +185,34 @@ async function loginUser(req, res) {
   try {
     var params = req.body;
     if (await methodUser.checkEmptyValueUsrsLogin(params)) {
-      if (await methodUser.validateEmailUsrs(params.email)) {
-        var infoEmail = await models.Users.findOne({
+      if (await methodUser.validateEmailUsrs(params.user_email)) {
+        var data = await models.Users.findOne({
           where: {
-            email: params.email
+            user_email: params.user_email
           }
         });
 
-        if (infoEmail !== null && infoEmail.length > 0) {
-          if (await bcrypt.compare(params.user_pass, infoEmail.user_pass)) {
-            var token = jwtToken.auth_users(infoEmail);
+        if (data === null || data.length < 0) {
+          return res.status(200).json({
+            code: 'API_U_403',
+            message: 'Este correo no existe en nuestros registros. Pruebe con otro.'
+          });
+        } else {
+   
+          if (await bcrypt.compare(params.user_pass, data.user_pass)) {
+            var token = await jwtToken.encode_users(data);
             return res.status(200).json({
-              infoEmail,
+              data,
               token: token,
-              code: 'API_U_403',
-              message: 'Inicio de sesión exitoso.'
-            });
+              code: 'API_U_200',
+              message: 'Inicio de sesión exitosa.'
+            })
           } else {
             return res.status(200).json({
               code: 'API_U_403',
               message: 'Contraseña incorrecta. Pruebe nuevamente.'
             });
           }
-        } else {
-          return res.status(200).json({
-            code: 'API_U_403',
-            message: 'Este correo no existe en nuestros registros. Pruebe con otro.'
-          });
         }
       } else {
         return res.status(200).json({

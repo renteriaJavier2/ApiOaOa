@@ -7,7 +7,9 @@ var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9
 
 async function checkEmptyValueUsrs(params) {
    if (params.user_email !== '' && params.user_lastname !== '' &&
-      params.user_name !== '' && params.user_pass !== '') {
+      params.user_name !== '' && params.user_pass !== '' && 
+      params.user_pro_id !== '' && params.user_type_id !== '' &&
+      params.user_visible !== '' && params.user_state !== '') {
       return true;
    }
    return false;

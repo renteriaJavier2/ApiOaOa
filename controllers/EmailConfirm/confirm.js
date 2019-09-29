@@ -49,7 +49,3 @@ async function saveHashVerify(id, hash) {
       console.log(JSON.stringify(error));
    }
 }
-
-module.exports = {
-   verifyRegister,
-}
