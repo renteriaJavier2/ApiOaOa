@@ -138,7 +138,36 @@ module.exports = {
             code: 'API_CR_403',
             messsage: 'Algo pasó.'
          });
-         
+
+      } catch (error) {
+         console.log(error)
+         return res.status(200).json({
+            code: 'API_CR_500',
+            messsage: error.messsage
+         });
+      }
+   },
+   updateCravingById: async (req, res) => {
+      try {
+         var idCrav = req.params.id;
+         var params = req.body;
+         var infoCV = await methodAux.buildUpdateCravingById(params);
+         var data = await models.Cravings.update(infoCV, {
+            plain: true, retuirning: true, where: { id: idCrav }
+         });
+
+         if (data[0] == 1)
+            return res.status(200).json({
+               data: data[1],
+               code: 'API_CR_200',
+               messsage: 'Antojo actualizado.'
+            });
+
+         return res.status(200).json({
+            code: 'API_CR_403',
+            messsage: 'No se puedo actualizar el antojo.'
+         });
+
       } catch (error) {
          console.log(error)
          return res.status(200).json({
