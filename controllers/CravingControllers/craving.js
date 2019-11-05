@@ -1,7 +1,7 @@
 'use strict';
 
 const models = require('../../models');
-const methodAux = require('./auxMethodCraving/auxmethod');
+const methodAux = require('./auxMethodCraving/auxmethodcrg');
 
 module.exports = {
    createMyCraving: async (req, res) => {

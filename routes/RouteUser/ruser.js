@@ -5,14 +5,14 @@ const routes = express.Router();
 const UserDecode = require('../../middleware/Users/decode_user');
 const UserController = require('../../controllers/UserControllers/usrs');
 
-routes.post('/user-create/', UserDecode.decode_user, UserController.createNewUser);
-routes.post('/user-login/', UserController.loginUser);
+routes.route('/user-create/', UserDecode.decode_user).post(UserController.createNewUser);
+routes.route('/user-login/').post(UserController.loginUser);
 
-routes.get('/user-lists/', UserDecode.decode_user, UserController.listsUsers);
-routes.get('/user-view/:id?', UserDecode.decode_user, UserController.viewDetailUser);
+routes.route('/user-lists/', UserDecode.decode_user).get(UserController.listsUsers);
+routes.route('/user-view/:id?', UserDecode.decode_user).get(UserController.viewDetailUser);
 
-routes.put('/user-update/:id?', UserDecode.decode_user, UserController.updateDataUsr);
+routes.route('/user-update/:id?', UserDecode.decode_user).put(UserController.updateDataUsr);
 
-routes.delete('/user-delete/:id?', UserDecode.decode_user, UserController.deleteInfoUser);
+routes.route('/user-delete/:id?', UserDecode.decode_user).delete(UserController.deleteInfoUser);
 
 module.exports = routes;
